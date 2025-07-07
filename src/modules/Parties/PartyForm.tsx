@@ -259,7 +259,7 @@ const PartyForm = ({
               {...register("mobile1")}
               disabled={isFormLoading}
               maxLength={10}
-type="number"
+type="tel"
             />
             {errors.mobile1 && (
               <span className="mt-1 block text-xs text-destructive">
@@ -276,7 +276,7 @@ type="number"
               {...register("mobile2")}
               disabled={isFormLoading}
               maxLength={10}
-type="number"
+type="tel"
             />
             {errors.mobile2 && (
               <span className="mt-1 block text-xs text-destructive">
@@ -310,7 +310,7 @@ type="number"
                   {...register("referenceMobile1")}
                   disabled={isFormLoading}
                   maxLength={10}
-                  type="number"
+                  type="tel"
                 />
                 {errors.referenceMobile1 && (
                   <span className="mt-1 block text-xs text-destructive">
@@ -327,7 +327,7 @@ type="number"
                   {...register("referenceMobile2")}
                   disabled={isFormLoading}
                   maxLength={10}
-                  type="number"
+                  type="tel"
                  />
                 {errors.referenceMobile2 && (
                   <span className="mt-1 block text-xs text-destructive">
