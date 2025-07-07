@@ -41,12 +41,10 @@ const partyFormSchema = z.object({
     .min(1, "Mobile number is required")
     .max(255, "Mobile number must not exceed 255 characters"),
     mobile2: z.any().optional(),
-    reference: z.string()
-    .min(1, "Reference is required")
-    .max(255, "Reference must not exceed 255 characters"),
-    referenceMobile1: z.string()
-    .min(1, "Reference mobile number is required")
-    .max(255, "Reference mobile number must not exceed 255 characters"),
+    reference: z.any()
+    .optional(),
+    referenceMobile1: z.any()
+    .optional(),
     referenceMobile2: z.any().optional(),
 });
 
@@ -289,7 +287,7 @@ type="number"
             </div>
 
             {/* Reference Field */}
-            <Label htmlFor="reference" className="block mb-2">Reference <span className="text-red-500">*</span></Label>
+            <Label htmlFor="reference" className="block mb-2">Reference</Label>
             <Input
               id="reference"
               placeholder="Enter reference"
@@ -305,7 +303,7 @@ type="number"
             <div className="grid grid-cols-2 gap-4">
               <div>
                 {/* Reference Mobile 1 Field */}
-                <Label htmlFor="referenceMobile1" className="block mb-2">Reference Mobile 1 <span className="text-red-500">*</span></Label>
+                <Label htmlFor="referenceMobile1" className="block mb-2">Reference Mobile 1</Label>
                 <Input
                   id="referenceMobile1"
                   placeholder="Enter reference mobile number"

@@ -16,6 +16,33 @@ import { useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient, useQuery } from "@tanstack/react-query";
 import { post, put, get } from "@/services/apiService";
 import Validate from "@/lib/Handlevalidation";
+
+// Helper to extract user-friendly message from API error
+const prettifyFieldName = (key: string): string => {
+  // Remove table prefix and suffix if present
+  const parts = key.split("_");
+  let field = parts.length > 1 ? parts[1] : key;
+  // Remove trailing 'key' or 'id'
+  field = field.replace(/(key|id)$/i, "");
+  // Convert camelCase to spaced words
+  field = field.replace(/([A-Z])/g, " $1").trim();
+  // Capitalize first letter
+  return field.charAt(0).toUpperCase() + field.slice(1);
+};
+
+const extractErrorMessage = (error: any): string | undefined => {
+  if (error?.errors && typeof error.errors === "object") {
+    const firstKey = Object.keys(error.errors)[0];
+    if (firstKey) {
+      const message = error.errors[firstKey]?.message as string | undefined;
+      if (message) {
+        const pretty = prettifyFieldName(firstKey);
+        return message.replace(firstKey, pretty);
+      }
+    }
+  }
+  return error?.message;
+};
 import PartyForm from "../Parties/PartyForm";
 
 // Define interfaces for API responses
@@ -46,6 +73,7 @@ const loanFormSchema = z.object({
     balanceInterest: z.string().optional(),
     // Party fields for create party option
     partyName: z.string().optional(),
+    accountNumber: z.string().optional(),
     address: z.string().optional(),
     mobile1: z.string().optional(),
     reference: z.string().optional(),
@@ -90,6 +118,7 @@ const LoanForm = ({
       balanceInterest: "0",
       // Party fields
       partyName: "",
+      accountNumber: "",
       address: "",
       mobile1: "",
       reference: "",
@@ -165,7 +194,10 @@ const LoanForm = ({
     },
     onError: (error: any) => {
       Validate(error, setError);
-      if (error.errors?.message) {
+      const msg = extractErrorMessage(error);
+      if (msg) {
+        toast.error(msg);
+      } else if (error.errors?.message) {
         toast.error(error.errors.message);
       } else if (error.message) {
         toast.error(error.message);
@@ -191,7 +223,10 @@ const LoanForm = ({
     },
     onError: (error: any) => {
       Validate(error, setError);
-      if (error.errors?.message) {
+      const msg = extractErrorMessage(error);
+      if (msg) {
+        toast.error(msg);
+      } else if (error.errors?.message) {
         toast.error(error.errors.message);
       } else if (error.message) {
         toast.error(error.message);
@@ -218,7 +253,10 @@ const LoanForm = ({
     },
     onError: (error: any) => {
       Validate(error, setError);
-      if (error.errors?.message) {
+      const msg = extractErrorMessage(error);
+      if (msg) {
+        toast.error(msg);
+      } else if (error.errors?.message) {
         toast.error(error.errors.message);
       } else if (error.message) {
         toast.error(error.message);
@@ -232,18 +270,18 @@ const LoanForm = ({
   const onSubmit: SubmitHandler<LoanFormInputs> = async (data) => {
     if (mode === "create" && selectedParty === "create") {
       // Validate party fields when creating new party
-      if (!data.partyName || !data.address || !data.mobile1 || !data.reference || !data.referenceMobile1) {
+      if (!data.partyName || !data.accountNumber || !data.address || !data.mobile1) {
         if (!data.partyName) setError("partyName", { message: "Party name is required" });
+        if (!data.accountNumber) setError("accountNumber", { message: "Account number is required" });
         if (!data.address) setError("address", { message: "Address is required" });
         if (!data.mobile1) setError("mobile1", { message: "Mobile number is required" });
-        if (!data.reference) setError("reference", { message: "Reference is required" });
-        if (!data.referenceMobile1) setError("referenceMobile1", { message: "Reference mobile number is required" });
         return;
       }
 
       // Create party first
       const partyData = {
         partyName: data.partyName,
+        accountNumber: data.accountNumber,
         address: data.address,
         mobile1: data.mobile1,
         mobile2: "", // Optional field
@@ -391,18 +429,40 @@ const LoanForm = ({
         ) : (
           <div className=" ">
              <div className="grid gap-2 relative">
-          <Label htmlFor="partyName" className="block mb-2">Party Name <span className="text-red-500">*</span></Label>
-          <Input
-            id="partyName"
-            placeholder="Enter party name"
-            {...register("partyName")}
-            disabled={isFormLoading}
-          />
-          {errors.partyName && (
-            <span className="mt-1 block text-xs text-destructive">
-              {errors.partyName.message}
-            </span>
-          )}
+              <div className="grid grid-cols-2 gap-4">
+             <div className="flex flex-col">
+            <Label htmlFor="accountNumber" className="mb-2">Account Number <span className="text-red-500">*</span></Label>
+            <Input
+              id="accountNumber"
+              placeholder="Enter account number"
+              {...register("accountNumber")}
+              disabled={isFormLoading}
+            />
+            {errors.accountNumber && (
+              <span className="mt-1 text-xs text-destructive">
+                {errors.accountNumber.message}
+              </span>
+            )}
+          </div>
+          <div className="flex flex-col">
+            <Label htmlFor="partyName" className="mb-2">Party Name <span className="text-red-500">*</span></Label>
+            <Input
+              id="partyName"
+              placeholder="Enter party name"
+              {...register("partyName")}
+              disabled={isFormLoading}
+            />
+            {errors.partyName && (
+              <span className="mt-1 text-xs text-destructive">
+                {errors.partyName.message}
+              </span>
+            )}
+          </div>
+          </div>
+          
+          {/* Account Number Field */}
+       
+          
             <div className="grid grid-cols-2 gap-4">
             <div>
             <Label htmlFor="address" className="block mb-2">Address <span className="text-red-500">*</span></Label>
@@ -428,7 +488,7 @@ const LoanForm = ({
               {...register("mobile1")}
               disabled={isFormLoading}
               maxLength={10}
-type="number"
+type="tel"
             />
             {errors.mobile1 && (
               <span className="mt-1 block text-xs text-destructive">
@@ -444,7 +504,7 @@ type="number"
             <div className="grid grid-cols-2 gap-4">
             <div>
     {/* Reference Field */}
-    <Label htmlFor="reference" className="block mb-2">Reference <span className="text-red-500">*</span></Label>
+    <Label htmlFor="reference" className="block mb-2">Reference</Label>
             <Input
               id="reference"
               placeholder="Enter reference"
@@ -460,14 +520,14 @@ type="number"
               </div>
               <div>
                 {/* Reference Mobile 1 Field */}
-                <Label htmlFor="referenceMobile1" className="block mb-2">Reference Mobile 1 <span className="text-red-500">*</span></Label>
+                <Label htmlFor="referenceMobile1" className="block mb-2">Reference Mobile 1</Label>
                 <Input
                   id="referenceMobile1"
                   placeholder="Enter reference mobile number"
                   {...register("referenceMobile1")}
                   disabled={isFormLoading}
                   maxLength={10}
-                  type="number"
+                  type="tel"
                 />
                 {errors.referenceMobile1 && (
                   <span className="mt-1 block text-xs text-destructive">
