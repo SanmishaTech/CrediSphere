@@ -48,6 +48,33 @@ const partyFormSchema = z.object({
     referenceMobile2: z.any().optional(),
 });
 
+// Helper to extract user-friendly message from API error
+const prettifyFieldName = (key: string): string => {
+  // Remove table prefix and suffix if present
+  const parts = key.split("_");
+  let field = parts.length > 1 ? parts[1] : key;
+  // Remove trailing 'key' or 'id'
+  field = field.replace(/(key|id)$/i, "");
+  // Convert camelCase to spaced words
+  field = field.replace(/([A-Z])/g, " $1").trim();
+  // Capitalize first letter
+  return field.charAt(0).toUpperCase() + field.slice(1);
+};
+
+const extractErrorMessage = (error: any): string | undefined => {
+  if (error?.errors && typeof error.errors === "object") {
+    const firstKey = Object.keys(error.errors)[0];
+    if (firstKey) {
+      const message = error.errors[firstKey]?.message as string | undefined;
+      if (message) {
+        const pretty = prettifyFieldName(firstKey);
+        return message.replace(firstKey, pretty);
+      }
+    }
+  }
+  return error?.message;
+};
+
 type PartyFormInputs = z.infer<typeof partyFormSchema>;
 
 interface PartyFormProps {
@@ -143,7 +170,10 @@ const PartyForm = ({
     },
     onError: (error: any) => {
       Validate(error, setError);
-      if (error.errors?.message) {
+      const msg = extractErrorMessage(error);
+      if (msg) {
+        toast.error(msg);
+      } else if (error.errors?.message) {
         toast.error(error.errors.message);
       } else if (error.message) {
         toast.error(error.message);
@@ -170,7 +200,10 @@ const PartyForm = ({
     },
     onError: (error: any) => {
       Validate(error, setError);
-      if (error.errors?.message) {
+      const msg = extractErrorMessage(error);
+      if (msg) {
+        toast.error(msg);
+      } else if (error.errors?.message) {
         toast.error(error.errors.message);
       } else if (error.message) {
         toast.error(error.message);
