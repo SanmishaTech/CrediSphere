@@ -90,6 +90,10 @@ interface MonthlyData {
   loanAmount: number;
   receivedAmount: number;
   receivedInterest: number;
+  /** Remaining interest for the month */
+  totalPendingInterest?: number;
+  /** Optional, older field name */
+  balanceInterest?: number;
   receivedDate: string | null;
 }
 
@@ -407,7 +411,7 @@ const LoanList = () => {
                    {months.map((month: string) => (
                     <TableHead key={month}>{month}</TableHead>
                   ))}
-                  <TableHead className="text-right">Total Interest</TableHead>
+                  <TableHead className="text-right">Remaining Interest</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -471,58 +475,37 @@ const LoanList = () => {
                         return (
                           <TableCell key={month}>
                             <div className="flex flex-col gap-1 text-xs">
-                              {hasData ? (
-                                <>
-                                  {/* Received Date */}
-                                  <div className="text-gray-600 font-medium">
-                                    {monthData.receivedDate 
-                                      ? format(new Date(monthData.receivedDate), "dd/MM/yyyy")
-                                      : "-"
-                                    }
-                                  </div>
-                                 
-                                  {/* Interest Amount */}
-                                  <div className="text-blue-600">
-                                    Interest: {monthData.receivedInterest > 0 
-                                      ? formatCurrency(monthData.receivedInterest) 
-                                      : "-"
-                                    }
-                                  </div>
-                                </>
-                              ) : fallbackLoanAmount || fallbackReceivedAmount ? (
-                                // Fallback display for old structure
-                                <>
-                                  <div className="text-gray-600">-</div>
-                                  
-                                  <div className="text-blue-600">
-                                    {fallbackReceivedAmount ? `Paid: ${formatCurrency(fallbackReceivedAmount)}` : "-"}
-                                  </div>
-                                </>
-                              ) : (
-                                // No data at all
-                                <>
-                                  <div className="text-gray-600">-</div>
-                                  <div className="text-blue-600">-</div>
-                                </>
-                              )}
+                              {/* Always show interest amount */}
+                              <div className="text-gray-600 font-medium">
+                                 {formatCurrency((row.totalLoanAmount * row.interest) / 100)}
+                              </div>
+                              
+                              {/* Show paid amount if available */}
+                              <div className="text-blue-600">
+                                {hasData && monthData.receivedInterest > 0 
+                                  ? `Paid: ${formatCurrency(monthData.receivedInterest)}` 
+                                  : fallbackReceivedAmount 
+                                    ? `Paid: ${formatCurrency(fallbackReceivedAmount)}` 
+                                    : "Paid: -"}
+                              </div>
                             </div>
                           </TableCell>
                         );
                       })}
                       <TableCell className="text-right">
-                        {formatCurrency(row.totalReceivedInterest)}
+                        {formatCurrency(row.totalBalanceInterest)}
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-2" onClick={(e) => e.stopPropagation()}>
-                          {/* <Button
+                          <Button
                             variant="ghost"
-                            size="sm"
+                            size="icon"
                             onClick={() => navigate(`/entries?loanId=${row.id}`)}
                             title="Entries"
                           >
                             <List className="h-4 w-4" />
                             <span className="sr-only">Entries</span>
-                          </Button> */}
+                          </Button>
                           <Button
                             variant="ghost"
                             size="icon"
