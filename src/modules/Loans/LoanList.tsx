@@ -343,7 +343,7 @@ const LoanList = () => {
             <div className="relative w-full md:w-auto flex-1 min-w-[200px]">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search Loans by Party Name..."
+                placeholder="Search by Party Name or Account Number..."
                 value={search}
                 onChange={handleSearchChange}
                 className="pl-8 w-full md:w-72"
@@ -405,10 +405,11 @@ const LoanList = () => {
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/50 hover:bg-muted/50">
-                <TableHead>Account Number</TableHead>
-                   <TableHead>Party</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Account Number</TableHead>
+                  <TableHead>Party</TableHead>
                   <TableHead>Loan(Interest)</TableHead>
-                   {months.map((month: string) => (
+                  {months.map((month: string) => (
                     <TableHead key={month}>{month}</TableHead>
                   ))}
                   <TableHead className="text-right">Remaining Interest</TableHead>
@@ -418,13 +419,13 @@ const LoanList = () => {
               <TableBody>
                 {(isLoading || isLoadingMonthlySummary) ? (
                   <TableRow>
-                    <TableCell colSpan={months.length + 4} className="text-center">
+                    <TableCell colSpan={months.length + 5} className="text-center">
                       <LoaderCircle className="h-8 w-8 animate-spin inline-block" />
                     </TableCell>
                   </TableRow>
                 ) : tableData.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={months.length + 4} className="text-center">
+                    <TableCell colSpan={months.length + 5} className="text-center">
                       No loans found.
                     </TableCell>
                   </TableRow>
@@ -439,10 +440,10 @@ const LoanList = () => {
                       }}
                     >
                       <TableCell>
-                        <div className="flex flex-col">
-                          <span>{format(parseISO(row.loanDate), "dd/MM/yyyy")}</span>
-                          <span className="text-sm text-muted-foreground">{row.party?.accountNumber}</span>
-                        </div>
+                        {format(parseISO(row.loanDate), "dd/MM/yyyy")}
+                      </TableCell>
+                      <TableCell>
+                        {row.party?.accountNumber}
                       </TableCell>
                        <TableCell>
                         <div className="flex flex-col">
