@@ -566,7 +566,7 @@ type="tel"
 
         
         {/* Loan Date and Amount */}
-        <div className="grid grid-cols-2 gap-4 mb-6">
+        <div className="grid grid-cols-3 gap-4 mb-6">
           <div>
             <Label htmlFor="loanDate" className="block mb-2">Loan Date <span className="text-red-500">*</span></Label>
             <Input
@@ -603,10 +603,7 @@ type="tel"
               </span>
             )}
           </div>
-        </div>
-
-        {/* Interest */}
-        <div className="mb-6">
+          <div className="mb-6">
           <Label htmlFor="interest" className="block mb-2">Interest (%) <span className="text-red-500">*</span></Label>
           <Input
             type="number"
@@ -621,11 +618,15 @@ type="tel"
             </span>
           )}
         </div>
+        </div>
+
+        {/* Interest */}
+       
 
         {/* Additional Fields */}
         <div className="grid grid-cols-3 gap-4 mb-6">
           <div>
-            <Label htmlFor="balanceAmount" className="block mb-2">Current Balance Amount</Label>
+            <Label htmlFor="balanceAmount" className="block mb-2">Balance Amount</Label>
             <div className="relative">
               <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
                 ₹
@@ -633,7 +634,7 @@ type="tel"
               <Input
                 type="number"
                 id="balanceAmount"
-                placeholder="Enter current balance"
+                placeholder="Enter balance amount"
                 {...register("balanceAmount")}
                 disabled={isFormLoading}
                 className="pl-7"
@@ -646,7 +647,7 @@ type="tel"
             )}
           </div>
           <div>
-            <Label htmlFor="interestPerMonth" className="block mb-2">Interest/Month</Label>
+            <Label htmlFor="interestPerMonth" className="block mb-2">Interest/Mo</Label>
             <div className="relative">
               <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
                 ₹

@@ -263,7 +263,7 @@ const CreateEntryForm: React.FC<CreateEntryFormProps> = ({
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium mb-1" htmlFor="entryDate">
             Next Entry Date <span className="text-red-500">*</span>
@@ -276,6 +276,18 @@ const CreateEntryForm: React.FC<CreateEntryFormProps> = ({
             onChange={handleChange}
             required
             disabled
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1" htmlFor="receivedDate">
+            Received Date
+          </label>
+          <Input
+            id="receivedDate"
+            name="receivedDate"
+            type="date"
+            value={form.receivedDate}
+            onChange={handleChange}
           />
         </div>
       </div>
@@ -381,19 +393,7 @@ const CreateEntryForm: React.FC<CreateEntryFormProps> = ({
         </>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-4">
-        <div>
-          <label className="block text-sm font-medium mb-1" htmlFor="receivedDate">
-            Received Date
-          </label>
-          <Input
-            id="receivedDate"
-            name="receivedDate"
-            type="date"
-            value={form.receivedDate}
-            onChange={handleChange}
-          />
-        </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label className="block text-sm font-medium mb-1" htmlFor="receivedAmount">
             Received Amount
@@ -414,26 +414,26 @@ const CreateEntryForm: React.FC<CreateEntryFormProps> = ({
             <p className="text-red-500 text-xs mt-1">{validationErrors.receivedAmount}</p>
           )}
         </div>
-      <div>
-        <label className="block text-sm font-medium mb-1" htmlFor="receivedInterest">
-          Received Interest
-        </label>
-        <div className="relative">
-          <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">₹</span>
-          <Input
-            id="receivedInterest"
-            name="receivedInterest"
-            type="number"
-            step="0.01"
-            value={form.receivedInterest}
-            onChange={handleChange}
-            className={`pl-7 ${validationErrors.receivedInterest ? 'border-orange-500' : ''}`}
-          />
+        <div>
+          <label className="block text-sm font-medium mb-1" htmlFor="receivedInterest">
+            Received Interest
+          </label>
+          <div className="relative">
+            <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">₹</span>
+            <Input
+              id="receivedInterest"
+              name="receivedInterest"
+              type="number"
+              step="0.01"
+              value={form.receivedInterest}
+              onChange={handleChange}
+              className={`pl-7 ${validationErrors.receivedInterest ? 'border-orange-500' : ''}`}
+            />
+          </div>
+          {validationErrors.receivedInterest && (
+            <p className="text-orange-500 text-xs mt-1">{validationErrors.receivedInterest}</p>
+          )}
         </div>
-        {validationErrors.receivedInterest && (
-          <p className="text-orange-500 text-xs mt-1">{validationErrors.receivedInterest}</p>
-        )}
-      </div>
       </div>
 
       <div className="flex justify-end gap-2">
