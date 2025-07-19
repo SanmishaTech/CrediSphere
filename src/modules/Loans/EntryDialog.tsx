@@ -280,7 +280,7 @@ const CreateEntryForm: React.FC<CreateEntryFormProps> = ({
         </div>
         <div>
           <label className="block text-sm font-medium mb-1" htmlFor="receivedDate">
-            Received Date
+            Received Date <span className="text-red-500">*</span>
           </label>
           <Input
             id="receivedDate"
@@ -288,6 +288,7 @@ const CreateEntryForm: React.FC<CreateEntryFormProps> = ({
             type="date"
             value={form.receivedDate}
             onChange={handleChange}
+            required
           />
         </div>
       </div>
@@ -416,7 +417,7 @@ const CreateEntryForm: React.FC<CreateEntryFormProps> = ({
         </div>
         <div>
           <label className="block text-sm font-medium mb-1" htmlFor="receivedInterest">
-            Received Interest
+            Received Interest <span className="text-red-500">*</span>
           </label>
           <div className="relative">
             <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">₹</span>
@@ -428,6 +429,7 @@ const CreateEntryForm: React.FC<CreateEntryFormProps> = ({
               value={form.receivedInterest}
               onChange={handleChange}
               className={`pl-7 ${validationErrors.receivedInterest ? 'border-orange-500' : ''}`}
+              required
             />
           </div>
           {validationErrors.receivedInterest && (
