@@ -53,6 +53,7 @@ interface LoanData {
   loanAmount: number;
   balanceAmount: number;
   interest: number;
+  interestPerMonth?: number;
   balanceInterest: number;
   referenceMobile1: string;
   referenceMobile2: string;
@@ -61,13 +62,14 @@ interface LoanData {
 }
 
 const loanFormSchema = z.object({
-  partyId: z.any()
-    .optional(),
+  partyId: z.string()
+    .nonempty("Please select a party"),
   loanDate: z.string()
     .nonempty("Loan date is required"),
     loanAmount: z.string()
     .nonempty("Loan amount is required"),
     balanceAmount: z.string().optional(),
+    interestPerMonth: z.string().optional(),
     interest: z.string()
     .nonempty("Interest is required"),
     balanceInterest: z.string().optional(),
@@ -114,6 +116,7 @@ const LoanForm = ({
       loanDate: mode === "create" ? new Date().toISOString().split("T")[0] : "",
       loanAmount: "",
       balanceAmount: "",
+      interestPerMonth: "",
       interest: "",
       balanceInterest: "0",
       // Party fields
@@ -126,8 +129,9 @@ const LoanForm = ({
     },
   });
 
-  // Watch loan amount to auto-populate balance amount
+  // Watch loan amount and interest to auto-populate balance amount and interest per month
   const loanAmount = watch("loanAmount");
+  const interest = watch("interest");
    
   // Auto-populate balance amount when loan amount changes (only in create mode)
   useEffect(() => {
@@ -135,6 +139,18 @@ const LoanForm = ({
       setValue("balanceAmount", loanAmount);
     }
   }, [loanAmount, setValue, mode]);
+
+  // Auto-calculate interest per month when loan amount or interest percentage changes
+  useEffect(() => {
+    if (loanAmount && interest) {
+      const loanAmountNum = parseFloat(loanAmount) || 0;
+      const interestNum = parseFloat(interest) || 0;
+      const interestPerMonth = ((loanAmountNum * interestNum) / 100).toString();
+      setValue("interestPerMonth", interestPerMonth);
+    } else {
+      setValue("interestPerMonth", "");
+    }
+  }, [loanAmount, interest, setValue]);
 
  
 
@@ -164,6 +180,8 @@ const LoanForm = ({
         setValue("loanAmount", data.loanAmount.toString());
         setValue("balanceAmount", data.balanceAmount.toString());
         setValue("interest", data.interest.toString());
+        setValue("interestPerMonth", data.interestPerMonth?.toString() || "");
+        setValue("balanceInterest", data.balanceInterest.toString());
       }).catch((error) => {
         toast.error(error.message || "Failed to fetch loan details");
         if (onSuccess) {
@@ -298,9 +316,10 @@ const LoanForm = ({
           partyId: createdParty.id,
           loanDate: data.loanDate,
           loanAmount: Number(data.loanAmount),
-          balanceAmount: Number(data.loanAmount), // Balance equals loan amount
+          balanceAmount: Number(data.balanceAmount) || Number(data.loanAmount),
           interest: Number(data.interest),
-          balanceInterest: 0, // Initialize balance interest to 0
+          interestPerMonth: Number(data.interestPerMonth) || 0,
+          balanceInterest: Number(data.balanceInterest) || 0,
         };
         
         createLoanMutation.mutate(loanPayload);
@@ -314,9 +333,10 @@ const LoanForm = ({
         partyId: parseInt(data.partyId, 10),
         loanDate: data.loanDate,
         loanAmount: Number(data.loanAmount),
-        balanceAmount: Number(data.loanAmount), // Balance equals loan amount
+        balanceAmount: Number(data.balanceAmount) || Number(data.loanAmount),
         interest: Number(data.interest),
-        balanceInterest: 0, // Initialize balance interest to 0
+        interestPerMonth: Number(data.interestPerMonth) || 0,
+        balanceInterest: Number(data.balanceInterest) || 0,
       };
       if (mode === "create") {
         createLoanMutation.mutate(payload);
@@ -600,6 +620,74 @@ type="tel"
               {errors.interest.message}
             </span>
           )}
+        </div>
+
+        {/* Additional Fields */}
+        <div className="grid grid-cols-3 gap-4 mb-6">
+          <div>
+            <Label htmlFor="balanceAmount" className="block mb-2">Current Balance Amount</Label>
+            <div className="relative">
+              <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
+                ₹
+              </span>
+              <Input
+                type="number"
+                id="balanceAmount"
+                placeholder="Enter current balance"
+                {...register("balanceAmount")}
+                disabled={isFormLoading}
+                className="pl-7"
+              />
+            </div>
+            {errors.balanceAmount && (
+              <span className="mt-1 block text-xs text-destructive">
+                {errors.balanceAmount.message}
+              </span>
+            )}
+          </div>
+          <div>
+            <Label htmlFor="interestPerMonth" className="block mb-2">Interest/Month</Label>
+            <div className="relative">
+              <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
+                ₹
+              </span>
+              <Input
+                type="number"
+                id="interestPerMonth"
+                placeholder="Auto-calculated"
+                {...register("interestPerMonth")}
+                disabled={true}
+                readOnly={true}
+                className="pl-7 bg-gray-50"
+              />
+            </div>
+            {errors.interestPerMonth && (
+              <span className="mt-1 block text-xs text-destructive">
+                {errors.interestPerMonth.message}
+              </span>
+            )}
+          </div>
+          <div>
+            <Label htmlFor="balanceInterest" className="block mb-2">Balance Interest</Label>
+            <div className="relative">
+              <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
+                ₹
+              </span>
+              <Input
+                type="number"
+                id="balanceInterest"
+                placeholder="Enter balance interest"
+                {...register("balanceInterest")}
+                disabled={isFormLoading}
+                className="pl-7"
+              />
+            </div>
+            {errors.balanceInterest && (
+              <span className="mt-1 block text-xs text-destructive">
+                {errors.balanceInterest.message}
+              </span>
+            )}
+          </div>
         </div>
 
         {/* Form Actions */}

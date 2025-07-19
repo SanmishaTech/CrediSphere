@@ -30,7 +30,22 @@ const EntryDialog: React.FC<EntryDialogProps> = ({
   const queryClient = useQueryClient();
   const createEntryMutation = useMutation({
     mutationFn: (payload: any) => post("/entries", payload),
-    onSuccess: () => {
+    onSuccess: (data) => {
+      // Check if any adjustments were made and show appropriate messages
+      if (data.adjustments) {
+        if (data.adjustments.interestAdjusted) {
+          toast.info(
+            `Interest amount was adjusted from ₹${data.adjustments.originalReceivedInterest} to ₹${data.adjustments.adjustedReceivedInterest}. Excess amount (₹${(data.adjustments.originalReceivedInterest - data.adjustments.adjustedReceivedInterest).toFixed(2)}) was added to received amount.`,
+            { duration: 6000 }
+          );
+        }
+        if (data.adjustments.amountAdjusted && !data.adjustments.interestAdjusted) {
+          toast.info(
+            `Received amount was adjusted from ₹${data.adjustments.originalReceivedAmount} to ₹${data.adjustments.adjustedReceivedAmount}.`,
+            { duration: 4000 }
+          );
+        }
+      }
       toast.success("Entry created successfully");
       queryClient.invalidateQueries({ queryKey: ["entries"] });
       queryClient.invalidateQueries({ queryKey: ["loans"] });
@@ -111,6 +126,10 @@ const CreateEntryForm: React.FC<CreateEntryFormProps> = ({
         entryDate: response.nextEntryDate ? response.nextEntryDate.split('T')[0] : prev.entryDate,
         totalPendingInterest: response.totalPendingInterest.toString(),
       }));
+      // Clear validation errors and reset adjustment state when new loan details are loaded
+      setValidationErrors({});
+      setBaseReceivedAmount(0);
+      setIsInterestAdjusting(false);
     } catch (error) {
       console.error('Failed to fetch loan details:', error);
       toast.error('Failed to fetch loan details');
@@ -119,12 +138,79 @@ const CreateEntryForm: React.FC<CreateEntryFormProps> = ({
     }
   };
 
+  const [validationErrors, setValidationErrors] = useState<{[key: string]: string}>({});
+  const [baseReceivedAmount, setBaseReceivedAmount] = useState<number>(0); // Track the original amount entered by user
+  const [isInterestAdjusting, setIsInterestAdjusting] = useState<boolean>(false); // Track if we're in adjustment mode
+
+  const validateAndAdjustAmounts = (updatedForm: typeof form, isInterestChange: boolean = false) => {
+    const errors: {[key: string]: string} = {};
+    
+    const receivedInterest = parseFloat(updatedForm.receivedInterest || '0');
+    const currentReceivedAmount = parseFloat(updatedForm.receivedAmount || '0');
+    const totalPendingInterest = parseFloat(updatedForm.totalPendingInterest || '0');
+    const balanceAmount = parseFloat(updatedForm.balanceAmount || '0');
+    
+    let adjustedReceivedAmount = currentReceivedAmount;
+    let shouldUpdateReceivedAmount = false;
+    
+    // If this is an interest change, calculate the adjustment
+    if (isInterestChange) {
+      if (receivedInterest > totalPendingInterest) {
+        // Interest exceeds limit - cap it and add excess to received amount
+        const excessInterest = receivedInterest - totalPendingInterest;
+        adjustedReceivedAmount = baseReceivedAmount + excessInterest;
+        shouldUpdateReceivedAmount = true;
+        setIsInterestAdjusting(true);
+        
+        errors.receivedInterest = `Interest will be capped at ₹${totalPendingInterest.toFixed(2)}. Excess ₹${excessInterest.toFixed(2)} will be added to received amount.`;
+      } else {
+        // Interest is within limit - use base amount
+        adjustedReceivedAmount = baseReceivedAmount;
+        shouldUpdateReceivedAmount = isInterestAdjusting; // Only update if we were previously adjusting
+        setIsInterestAdjusting(false);
+      }
+    }
+    
+    if (adjustedReceivedAmount > balanceAmount) {
+      errors.receivedAmount = `Total received amount (₹${adjustedReceivedAmount.toFixed(2)}) cannot exceed balance amount (₹${balanceAmount.toFixed(2)}).`;
+    }
+    
+    return { errors, adjustedReceivedAmount, shouldUpdateReceivedAmount };
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+    const updatedForm = { ...form, [name]: value };
+    setForm(updatedForm);
 
     if (name === 'loanId' && value && !isNaN(Number(value))) {
       fetchLoanDetails(value);
+    }
+    
+    // Handle received amount changes - track the base amount
+    if (name === 'receivedAmount') {
+      const newAmount = parseFloat(value || '0');
+      // Only update base amount if we're not currently in adjustment mode
+      if (!isInterestAdjusting) {
+        setBaseReceivedAmount(newAmount);
+      }
+      
+      const validation = validateAndAdjustAmounts(updatedForm, false);
+      setValidationErrors(validation.errors);
+    }
+    
+    // Handle received interest changes - adjust amount if needed
+    if (name === 'receivedInterest') {
+      const validation = validateAndAdjustAmounts(updatedForm, true);
+      setValidationErrors(validation.errors);
+      
+      // Update received amount if adjustment is needed
+      if (validation.shouldUpdateReceivedAmount) {
+        setForm(prev => ({
+          ...prev,
+          receivedAmount: validation.adjustedReceivedAmount.toString()
+        }));
+      }
     }
   };
 
@@ -321,9 +407,12 @@ const CreateEntryForm: React.FC<CreateEntryFormProps> = ({
               step="0.01"
               value={form.receivedAmount}
               onChange={handleChange}
-              className="pl-7"
+              className={`pl-7 ${validationErrors.receivedAmount ? 'border-red-500' : ''}`}
             />
           </div>
+          {validationErrors.receivedAmount && (
+            <p className="text-red-500 text-xs mt-1">{validationErrors.receivedAmount}</p>
+          )}
         </div>
       <div>
         <label className="block text-sm font-medium mb-1" htmlFor="receivedInterest">
@@ -338,9 +427,12 @@ const CreateEntryForm: React.FC<CreateEntryFormProps> = ({
             step="0.01"
             value={form.receivedInterest}
             onChange={handleChange}
-            className="pl-7"
+            className={`pl-7 ${validationErrors.receivedInterest ? 'border-orange-500' : ''}`}
           />
         </div>
+        {validationErrors.receivedInterest && (
+          <p className="text-orange-500 text-xs mt-1">{validationErrors.receivedInterest}</p>
+        )}
       </div>
       </div>
 
