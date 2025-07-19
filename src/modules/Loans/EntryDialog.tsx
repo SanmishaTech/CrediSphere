@@ -90,6 +90,12 @@ const CreateEntryForm: React.FC<CreateEntryFormProps> = ({
     return today.toISOString().split('T')[0];
   };
 
+  const formatDateForDisplay = (dateString: string) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-GB'); // DD/MM/YYYY format
+  };
+
   const [form, setForm] = useState({
     loanId: loanIdPrefill ?? "",
     entryDate: getTodayDate(),
@@ -214,24 +220,7 @@ const CreateEntryForm: React.FC<CreateEntryFormProps> = ({
     }
   };
 
-  const calculateInterestAmount = (balance: string, percentage: string) => {
-    const balanceNum = parseFloat(balance) || 0;
-    const percentageNum = parseFloat(percentage) || 0;
-    return ((balanceNum * percentageNum) / 100).toString();
-  };
 
-  const handleBalanceOrPercentageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    const updatedForm = { ...form, [name]: value };
-
-    if (name === 'balanceAmount' || name === 'interestPercentage') {
-      const newBalance = name === 'balanceAmount' ? value : form.balanceAmount;
-      const newPercentage = name === 'interestPercentage' ? value : form.interestPercentage;
-      updatedForm.interestAmount = calculateInterestAmount(newBalance, newPercentage);
-    }
-
-    setForm(updatedForm);
-  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -246,7 +235,7 @@ const CreateEntryForm: React.FC<CreateEntryFormProps> = ({
   };
 
   return (
-    <form className="space-y-4" onSubmit={handleSubmit}>
+    <form className="space-y-6" onSubmit={handleSubmit}>
       {!loanIdPrefill && (
         <div>
           <label className="block text-sm font-medium mb-1" htmlFor="loanId">
@@ -263,188 +252,157 @@ const CreateEntryForm: React.FC<CreateEntryFormProps> = ({
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium mb-1" htmlFor="entryDate">
-            Next Entry Date <span className="text-red-500">*</span>
-          </label>
-          <Input
-            id="entryDate"
-            name="entryDate"
-            type="date"
-            value={form.entryDate}
-            onChange={handleChange}
-            required
-            disabled
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1" htmlFor="receivedDate">
-            Received Date <span className="text-red-500">*</span>
-          </label>
-          <Input
-            id="receivedDate"
-            name="receivedDate"
-            type="date"
-            value={form.receivedDate}
-            onChange={handleChange}
-            required
-          />
-        </div>
-      </div>
+
 
       {form.loanId && (
         <>
-          <div className="grid grid-cols-4 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-1" htmlFor="balanceAmount">
-                Current Balance Amount
-              </label>
-              <div className="relative">
-                <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">₹</span>
-                <Input
-                  id="balanceAmount"
-                  name="balanceAmount"
-                  type="number"
-                  step="0.01"
-                  value={form.balanceAmount}
-                  onChange={handleBalanceOrPercentageChange}
-                  className="pl-7 bg-gray-100 cursor-not-allowed"
-                  disabled
-                />
+          {/* Loan Details Section */}
+          <div className="bg-gray-50 p-4 rounded-lg border">
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="text-sm font-semibold text-gray-800">Loan Details</h3>
+              <div className="text-right">
+                <div className="text-xs text-gray-500 uppercase tracking-wide">Next Entry Date</div>
+                <div className="text-sm font-semibold text-gray-900">{formatDateForDisplay(form.entryDate)}</div>
               </div>
             </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1" htmlFor="interestPercentage">
-                Interest Rate %
-              </label>
-              <Input
-                id="interestPercentage"
-                name="interestPercentage"
-                type="number"
-                step="0.01"
-                value={form.interestPercentage}
-                disabled
-                className="bg-gray-100 cursor-not-allowed"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1" htmlFor="balanceInterest">
-                Balance Interest
-              </label>
-              <div className="relative">
-                <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">₹</span>
-                <Input
-                  id="balanceInterest"
-                  name="balanceInterest"
-                  type="number"
-                  step="0.01"
-                  value={form.balanceInterest}
-                  disabled
-                  className="pl-7 bg-gray-100 cursor-not-allowed"
-                />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-600">Current Balance Amount</label>
+                <div className="py-2 px-1">
+                  <span className="text-base font-semibold text-gray-900">₹{parseFloat(form.balanceAmount || '0').toFixed(2)}</span>
+                </div>
               </div>
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1 flex items-center gap-1" htmlFor="interestAmount">
-                Interest Amount
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Info className="w-4 h-4 text-blue-600 cursor-pointer" />
-                  </DialogTrigger>
-                  <DialogContent className="max-w-md">
-                    <DialogHeader>
-                      <DialogTitle>Interest Calculation</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-2 text-sm">
-                      <div className="flex justify-between">
-                        <span>Interest on Balance</span>
-                        <span className="font-semibold">{((parseFloat(form.balanceAmount || '0') * parseFloat(form.interestPercentage || '0')) / 100).toFixed(2)}</span>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-600">Interest Rate</label>
+                <div className="py-2 px-1">
+                  <span className="text-base font-semibold text-gray-900">{parseFloat(form.interestPercentage || '0').toFixed(2)}%</span>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-600">Balance Interest</label>
+                <div className="py-2 px-1">
+                  <span className="text-base font-semibold text-gray-900">₹{parseFloat(form.balanceInterest || '0').toFixed(2)}</span>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-600 flex items-center gap-1">
+                  Interest Amount
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Info className="w-4 h-4 text-blue-600 cursor-pointer hover:text-blue-800 transition-colors" />
+                    </DialogTrigger>
+                    <DialogContent className="max-w-md">
+                      <DialogHeader>
+                        <DialogTitle>Interest Calculation</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-3 text-sm">
+                        <div className="flex justify-between py-2 border-b border-gray-100">
+                          <span className="text-gray-600">Interest on Balance</span>
+                          <span className="font-semibold">₹{((parseFloat(form.balanceAmount || '0') * parseFloat(form.interestPercentage || '0')) / 100).toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between py-2 border-b border-gray-100">
+                          <span className="text-gray-600">Current Balance Interest</span>
+                          <span className="font-semibold">₹{parseFloat(form.balanceInterest || '0').toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between py-2 border-t-2 border-gray-300 font-semibold">
+                          <span className="text-gray-800">Total Interest Amount</span>
+                          <span className="text-lg text-blue-600">₹{parseFloat(form.totalPendingInterest || '0').toFixed(2)}</span>
+                        </div>
                       </div>
-                      <div className="flex justify-between">
-                        <span>Current Balance Interest</span>
-                        <span className="font-semibold">{parseFloat(form.balanceInterest || '0').toFixed(2)}</span>
-                      </div>
-                      <div className="flex justify-between border-t pt-2 mt-2 font-semibold">
-                        <span>New Interest Amount</span>
-                        <span className="text-lg">{parseFloat(form.totalPendingInterest || '0').toFixed(2)}</span>
-                      </div>
-                    </div>
-                  </DialogContent>
-                </Dialog>
-
-              </label>
-              <div className="relative">
-                <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">₹</span>
-                <Input
-                  id="interestAmount"
-                  name="interestAmount"
-                  type="number"
-                  step="0.01"
-                  value={form.totalPendingInterest}
-                  disabled
-                  className="pl-7 bg-gray-100 cursor-not-allowed"
-                />
+                    </DialogContent>
+                  </Dialog>
+                </label>
+                <div className="py-2 px-1 bg-blue-50 rounded">
+                  <span className="text-base font-semibold text-blue-900">₹{parseFloat(form.totalPendingInterest || '0').toFixed(2)}</span>
+                </div>
               </div>
             </div>
           </div>
-
-
         </>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm font-medium mb-1" htmlFor="receivedAmount">
-            Received Amount
-          </label>
-          <div className="relative">
-            <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">₹</span>
+      {/* Payment Section */}
+      <div className="space-y-4">
+        <h3 className="text-sm font-semibold text-gray-800 border-b border-gray-200 pb-2">Payment Details</h3>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="space-y-1">
+            <label className="block text-sm font-bold text-gray-700" htmlFor="receivedDate">
+              Received Date <span className="text-red-500">*</span>
+            </label>
             <Input
-              id="receivedAmount"
-              name="receivedAmount"
-              type="number"
-              step="0.01"
-              value={form.receivedAmount}
+              id="receivedDate"
+              name="receivedDate"
+              type="date"
+              value={form.receivedDate}
               onChange={handleChange}
-              className={`pl-7 ${validationErrors.receivedAmount ? 'border-red-500' : ''}`}
-            />
-          </div>
-          {validationErrors.receivedAmount && (
-            <p className="text-red-500 text-xs mt-1">{validationErrors.receivedAmount}</p>
-          )}
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1" htmlFor="receivedInterest">
-            Received Interest <span className="text-red-500">*</span>
-          </label>
-          <div className="relative">
-            <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">₹</span>
-            <Input
-              id="receivedInterest"
-              name="receivedInterest"
-              type="number"
-              step="0.01"
-              value={form.receivedInterest}
-              onChange={handleChange}
-              className={`pl-7 ${validationErrors.receivedInterest ? 'border-orange-500' : ''}`}
               required
+              className="focus:ring-2 focus:ring-blue-500"
             />
           </div>
-          {validationErrors.receivedInterest && (
-            <p className="text-orange-500 text-xs mt-1">{validationErrors.receivedInterest}</p>
-          )}
+          <div className="space-y-1">
+            <label className="block text-sm font-bold text-gray-700" htmlFor="receivedInterest">
+              Received Interest <span className="text-red-500">*</span>
+            </label>
+            <div className="relative">
+              <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500 font-medium">₹</span>
+              <Input
+                id="receivedInterest"
+                name="receivedInterest"
+                type="number"
+                step="0.01"
+                value={form.receivedInterest}
+                onChange={handleChange}
+                className={`pl-7 focus:ring-2 ${validationErrors.receivedInterest ? 'border-orange-500 focus:ring-orange-200' : 'focus:ring-blue-500'}`}
+                placeholder="0.00"
+                required
+              />
+            </div>
+            {validationErrors.receivedInterest && (
+              <p className="text-orange-600 text-xs mt-1 flex items-start gap-1">
+                <span className="text-orange-500 mt-0.5">ℹ</span>
+                {validationErrors.receivedInterest}
+              </p>
+            )}
+          </div>
+          <div className="space-y-1">
+            <label className="block text-sm font-bold text-gray-700" htmlFor="receivedAmount">
+              Received Amount
+            </label>
+            <div className="relative">
+              <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500 font-medium">₹</span>
+              <Input
+                id="receivedAmount"
+                name="receivedAmount"
+                type="number"
+                step="0.01"
+                value={form.receivedAmount}
+                onChange={handleChange}
+                className={`pl-7 focus:ring-2 ${validationErrors.receivedAmount ? 'border-red-500 focus:ring-red-200' : 'focus:ring-blue-500'}`}
+                placeholder="0.00"
+              />
+            </div>
+            {validationErrors.receivedAmount && (
+              <p className="text-red-500 text-xs mt-1 flex items-start gap-1">
+                <span className="text-red-500 mt-0.5">⚠</span>
+                {validationErrors.receivedAmount}
+              </p>
+            )}
+          </div>
+         
         </div>
       </div>
 
-      <div className="flex justify-end gap-2">
+      <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
         {onCancel && (
-          <Button type="button" variant="outline" onClick={onCancel}>
+          <Button type="button" variant="outline" onClick={onCancel} className="px-6">
             Cancel
           </Button>
         )}
-        <Button type="submit" disabled={isSubmitting}>
+        <Button 
+          type="submit" 
+          disabled={isSubmitting || Object.keys(validationErrors).some(key => validationErrors[key] && validationErrors[key].includes('cannot exceed'))}
+          className="px-6 bg-blue-600 hover:bg-blue-700 focus:ring-2 focus:ring-blue-500"
+        >
           {isSubmitting && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
           Create Entry
         </Button>

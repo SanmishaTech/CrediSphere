@@ -405,8 +405,8 @@ const LoanList = () => {
             <Table>
               <TableHeader>
                 <TableRow className="bg-muted/50 hover:bg-muted/50">
-                  <TableHead>Date</TableHead>
                   <TableHead>Account Number</TableHead>
+                  <TableHead>Date</TableHead>
                   <TableHead>Party</TableHead>
                   <TableHead>Loan(Interest)</TableHead>
                   {months.map((month: string) => (
@@ -439,12 +439,13 @@ const LoanList = () => {
                         setIsEntryDialogOpen(true);
                       }}
                     >
+                        <TableCell>
+                        {row.party?.accountNumber}
+                      </TableCell>
                       <TableCell>
                         {format(parseISO(row.loanDate), "dd/MM/yyyy")}
                       </TableCell>
-                      <TableCell>
-                        {row.party?.accountNumber}
-                      </TableCell>
+                    
                        <TableCell>
                         <div className="flex flex-col">
                           <span className="font-medium">{row.partyName}</span>
