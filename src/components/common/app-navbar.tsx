@@ -49,12 +49,12 @@ export const AppNavbar = ({ userData, isDarkMode, toggleDarkMode }: AppNavbarPro
   };
 
   return (
-    <header className="bg-card/75 backdrop-blur-lg sticky top-4 z-50 flex h-12 shrink-0 items-center justify-between rounded-xl border shadow-lg px-4 mx-2 md:mx-auto w-[calc(100%-1rem)] md:w-[calc(100%-19rem)]">
+    <header className="bg-card/75 backdrop-blur-lg sticky top-4 z-50 flex h-16 shrink-0 items-center justify-between rounded-xl border shadow-lg px-6 mx-2 md:mx-auto w-[calc(100%-1rem)] md:w-[calc(100%-19rem)]">
       <div className="flex items-center gap-4">
         {/* Logo */}
         <Link to="/dashboard" className="flex items-center gap-2">
-          <img src="/credisphere-logo.svg" alt="CrediSphere Logo" className="h-8 w-8" />
-          <span className="font-bold text-lg hidden md:block lg:block">CrediSphere</span>
+          <img src="/credisphere-logo.svg" alt="CrediSphere Logo" className="h-10 w-10" />
+          <span className="font-bold text-xl hidden md:block lg:block">CrediSphere</span>
         </Link>
         
         {/* Navigation */}
@@ -65,12 +65,12 @@ export const AppNavbar = ({ userData, isDarkMode, toggleDarkMode }: AppNavbarPro
            
            
             <NavigationMenuItem>
-              <NavigationMenuLink asChild className={`${navigationMenuTriggerStyle()} bg-transparent hover:bg-transparent focus:bg-transparent`}>
+              <NavigationMenuLink asChild className={`${navigationMenuTriggerStyle()} bg-transparent hover:bg-transparent focus:bg-transparent text-base h-12`}>
                 <Link to="/parties">Party</Link>
               </NavigationMenuLink>
             </NavigationMenuItem>
             <NavigationMenuItem>
-              <NavigationMenuLink asChild className={`${navigationMenuTriggerStyle()} bg-transparent hover:bg-transparent focus:bg-transparent`}>
+              <NavigationMenuLink asChild className={`${navigationMenuTriggerStyle()} bg-transparent hover:bg-transparent focus:bg-transparent text-base h-12`}>
                 <Link to="/loans">Loan</Link>
               </NavigationMenuLink>
             </NavigationMenuItem>
@@ -86,7 +86,7 @@ export const AppNavbar = ({ userData, isDarkMode, toggleDarkMode }: AppNavbarPro
           <Sheet>
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon">
-                <Menu className="h-6 w-6" />
+                <Menu className="h-7 w-7" />
               </Button>
             </SheetTrigger>
             <SheetContent side="right" className="w-[300px] sm:w-[400px]">
@@ -105,9 +105,9 @@ export const AppNavbar = ({ userData, isDarkMode, toggleDarkMode }: AppNavbarPro
           <TooltipTrigger asChild>
             <Link 
               to="/recycle-bin"
-              className="inline-flex items-center justify-center h-9 w-9 rounded-md hover:bg-accent hover:text-accent-foreground transition-colors"
+              className="inline-flex items-center justify-center h-10 w-10 rounded-md hover:bg-accent hover:text-accent-foreground transition-colors"
             >
-              <Trash className="h-4 w-4" />
+              <Trash className="h-5 w-5" />
               <span className="sr-only">Recycle Bin</span>
             </Link>
           </TooltipTrigger>
@@ -116,8 +116,8 @@ export const AppNavbar = ({ userData, isDarkMode, toggleDarkMode }: AppNavbarPro
         
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-              <Avatar className="h-9 w-9">
+            <Button variant="ghost" className="relative h-10 w-10 rounded-full">
+              <Avatar className="h-10 w-10">
                 <AvatarImage src="/avatars/01.png" alt="@shadcn" />
                 <AvatarFallback>{userData ? getInitials(userData.name) : "U"}</AvatarFallback>
               </Avatar>

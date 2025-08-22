@@ -439,7 +439,7 @@ const LoanList = () => {
                   tableData.map(row => (
                     <TableRow 
                       key={row.id} 
-                      className={`cursor-pointer divide-x divide-border ${row.isClosed ? 'bg-red-50 hover:bg-red-100' : 'hover:bg-muted/50'}`} 
+                      className={`cursor-pointer divide-x divide-border transition-colors ${row.isClosed ? 'bg-red-50 hover:bg-red-100 dark:bg-red-900/30 dark:hover:bg-red-800/40 border-l-4 border-l-red-300 dark:border-l-red-500' : 'hover:bg-muted/50 dark:hover:bg-muted/40'}`} 
                       onClick={() => {
                         setSelectedLoanId(row.id);
                         setSelectedLoanIsClosed(!!row.isClosed);
@@ -484,12 +484,12 @@ const LoanList = () => {
                           <TableCell key={month} className="text-center">
                             <div className="flex flex-col gap-1 text-sm md:text-base">
                               {/* Always show interest amount */}
-                              <div className="text-gray-700 font-semibold text-base md:text-lg tabular-nums">
+                              <div className="text-gray-700 dark:text-gray-200 font-semibold text-base md:text-lg tabular-nums">
                                  {formatCurrency((row.totalLoanAmount * row.interest) / 100)}
                               </div>
                               
                               {/* Show paid amount if available */}
-                              <div className="text-blue-600 font-semibold text-sm md:text-base tabular-nums">
+                              <div className="text-blue-600 dark:text-blue-400 font-semibold text-sm md:text-base tabular-nums">
                                  {hasData && monthData.receivedInterest > 0 
                                    ? `${formatCurrency(monthData.receivedInterest)}` 
                                    : fallbackReceivedAmount 
