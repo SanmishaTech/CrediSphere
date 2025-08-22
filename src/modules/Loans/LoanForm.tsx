@@ -43,7 +43,6 @@ const extractErrorMessage = (error: any): string | undefined => {
   }
   return error?.message;
 };
-import PartyForm from "../Parties/PartyForm";
 
 // Define interfaces for API responses
 interface LoanData {
@@ -62,8 +61,7 @@ interface LoanData {
 }
 
 const loanFormSchema = z.object({
-  partyId: z.string()
-    .nonempty("Please select a party"),
+  partyId: z.string().optional(),
   loanDate: z.string()
     .nonempty("Loan date is required"),
     loanAmount: z.string()
@@ -286,6 +284,14 @@ const LoanForm = ({
 
   // Handle form submission
   const onSubmit: SubmitHandler<LoanFormInputs> = async (data) => {
+    // Conditional validation based on party selection
+    if (mode === "create" && selectedParty === "existing") {
+      if (!data.partyId) {
+        setError("partyId", { message: "Please select a party" });
+        return;
+      }
+    }
+
     if (mode === "create" && selectedParty === "create") {
       // Validate party fields when creating new party
       if (!data.partyName || !data.accountNumber || !data.address || !data.mobile1) {
@@ -329,6 +335,10 @@ const LoanForm = ({
       }
     } else {
       // Convert string inputs to numbers to match backend expectations
+      if (!data.partyId) {
+        setError("partyId", { message: "Please select a party" });
+        return;
+      }
       const payload = {
         partyId: parseInt(data.partyId, 10),
         loanDate: data.loanDate,

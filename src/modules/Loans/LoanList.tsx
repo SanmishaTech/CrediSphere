@@ -19,7 +19,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Card, CardContent, CardDescription, CardHeader } from "@/components/ui/card";
 import {
@@ -31,7 +30,6 @@ import {
   List,
   ChevronLeft,
   ChevronRight,
-  Info
 } from "lucide-react";
 import {
   AlertDialog,
@@ -61,23 +59,9 @@ interface Loan {
   balanceInterest: number;
   partyName: string;
   accountNumber: string;
-  party?: {
-    partyName: string;
-    accountNumber: string;
-    mobile1: string;
-    address: string;
-  };
-}
-
-interface Loan {
-  id: number;
-  loanDate: string;
-  loanAmount: number;
-  balanceAmount: number;
-  interest: number;
-  balanceInterest: number;
-  partyName: string;
-  accountNumber: string;
+  isClosed?: boolean;
+  closedAt?: string | null;
+  closedAmount?: number | null;
   party?: {
     partyName: string;
     accountNumber: string;
@@ -115,6 +99,7 @@ interface TableRowData {
   totalReceivedAmount?: number;
   totalReceivedInterest?: number;
   interest: number;
+  isClosed?: boolean;
 }
 
 interface LoansResponse {
@@ -128,14 +113,15 @@ const LoanList = () => {
   const queryClient = useQueryClient();
   const [currentPage, setCurrentPage] = useState(1);
   const [recordsPerPage, setRecordsPerPage] = useState(10);
-  const [sortBy, setSortBy] = useState("loanDate");
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+  const [sortBy] = useState("loanDate");
+  const [sortOrder] = useState<"asc" | "desc">("desc");
   const [search, setSearch] = useState("");
   const [editLoanId, setEditLoanId] = useState<string | null>(null);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [selectedLoanId, setSelectedLoanId] = useState<number | null>(null);
   const [isEntryDialogOpen, setIsEntryDialogOpen] = useState(false);
+  const [selectedLoanIsClosed, setSelectedLoanIsClosed] = useState<boolean>(false);
   const [currentDate, setCurrentDate] = useState(new Date());
 
   const handlePrevMonths = () => {
@@ -188,7 +174,6 @@ const LoanList = () => {
   // Fetch latest day close info
   const {
     data: lastCloseData,
-    isLoading: isLoadingLastClose,
   } = useQuery({
     queryKey: ["lastDayClose"],
     queryFn: () => get("/api/day-closes/last"),
@@ -292,6 +277,7 @@ const LoanList = () => {
         totalReceivedInterest: summary?.totalReceivedInterest ?? 0,
         totalBalanceInterest: loan.balanceInterest,
         interest: loan.interest,
+        isClosed: loan.isClosed,
       } as TableRowData;
     });
 
@@ -320,36 +306,53 @@ const LoanList = () => {
       
       <Card className="border border-border">
         <CardHeader className="text-xl font-bold">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-4">
             <div>
               Loans
               <CardDescription>
                 Manage loans
               </CardDescription>
             </div>
-            {lastCloseData?.lastClose && (
-              <div className="text-sm text-muted-foreground">
-                Latest close: {formatDate(new Date(lastCloseData.lastClose.closedAt), "dd MMM yyyy, hh:mm a")} 
+            {/* Right group: search with latest close under it (desktop) */}
+            <div className="hidden min-[765px]:flex flex-col items-end gap-1">
+              <div className="relative w-[22rem] max-w-full">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search..."
+                  value={search}
+                  onChange={handleSearchChange}
+                  className="pl-9"
+                />
               </div>
-            )}
+              {lastCloseData?.lastClose && (
+                <div className="text-xs text-muted-foreground">
+                  Latest close: {formatDate(new Date(lastCloseData.lastClose.closedAt), "dd MMM yyyy, hh:mm a")} 
+                </div>
+              )}
+            </div>
           </div>
         </CardHeader>
       
         <CardContent>
        
           {/* Toolbar */}
-          <div className="flex flex-col gap-4 mb-4 md:grid md:grid-cols-3 md:items-center">
-            {/* Search Input */}
-            <div className="relative w-full md:w-auto flex-1 min-w-[200px]">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <div className="flex flex-col gap-4 mb-4 min-[765px]:grid min-[765px]:grid-cols-3 min-[765px]:items-center">
+            {/* Search Input (below 765px) */}
+            <div className="relative w-full flex-1 min-w-[200px] min-[765px]:invisible">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search by Party Name or Account Number..."
+                placeholder="Search..."
                 value={search}
                 onChange={handleSearchChange}
-                className="pl-8 w-full md:w-72"
+                className="pl-9 w-full md:w-72"
               />
+              {lastCloseData?.lastClose && (
+                <div className="mt-1 text-xs text-muted-foreground">
+                  Latest close: {formatDate(new Date(lastCloseData.lastClose.closedAt), "dd MMM yyyy, hh:mm a")} 
+                </div>
+              )}
             </div>
-            <div className="flex items-center justify-center gap-2 md:gap-5 md:mb-0 md:justify-self-center">
+            <div className="flex items-center justify-center gap-2 min-[765px]:gap-5 min-[765px]:mb-0 min-[765px]:justify-self-center">
             <Button onClick={handlePrevMonths} variant="outline">
               <ChevronLeft className="h-4 w-4 mr-1" />
               Prev
@@ -363,11 +366,11 @@ const LoanList = () => {
             </Button>
           </div>
 
-<div className="flex justify-end md:justify-self-end gap-2">
+<div className="flex justify-end min-[765px]:justify-self-end gap-2">
             {/* Day Close Button */}
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button size="sm" variant="outline" disabled={dayCloseMutation.isPending} label="Dayclose">
+                <Button size="sm" variant="outline" disabled={dayCloseMutation.isPending}>
                   {dayCloseMutation.isPending && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
                   Dayclose
                 </Button>
@@ -404,27 +407,27 @@ const LoanList = () => {
           <div className="rounded-md border overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow className="bg-muted/50 hover:bg-muted/50">
-                  <TableHead>Account Number</TableHead>
-                  <TableHead>Date</TableHead>
+                <TableRow className="bg-muted/50 hover:bg-muted/50 divide-x divide-border">
+                  <TableHead className="text-center">Account Number</TableHead>
+                  <TableHead className="text-center">Date</TableHead>
                   <TableHead>Party</TableHead>
-                  <TableHead>Loan(Interest)</TableHead>
+                  <TableHead className="text-center">Loan(Interest)</TableHead>
                   {months.map((month: string) => (
-                    <TableHead key={month}>{month}</TableHead>
+                    <TableHead key={month} className="text-center">{month}</TableHead>
                   ))}
-                  <TableHead className="text-right">Remaining Interest</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead className="text-center">Remaining Interest</TableHead>
+                  <TableHead className="text-center">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {(isLoading || isLoadingMonthlySummary) ? (
-                  <TableRow>
+                  <TableRow className="divide-x divide-border">
                     <TableCell colSpan={months.length + 5} className="text-center">
                       <LoaderCircle className="h-8 w-8 animate-spin inline-block" />
                     </TableCell>
                   </TableRow>
                 ) : tableData.length === 0 ? (
-                  <TableRow>
+                  <TableRow className="divide-x divide-border">
                     <TableCell colSpan={months.length + 5} className="text-center">
                       No loans found.
                     </TableCell>
@@ -433,16 +436,17 @@ const LoanList = () => {
                   tableData.map(row => (
                     <TableRow 
                       key={row.id} 
-                      className="cursor-pointer hover:bg-muted/50" 
+                      className={`cursor-pointer divide-x divide-border ${row.isClosed ? 'bg-red-50 hover:bg-red-100' : 'hover:bg-muted/50'}`} 
                       onClick={() => {
                         setSelectedLoanId(row.id);
+                        setSelectedLoanIsClosed(!!row.isClosed);
                         setIsEntryDialogOpen(true);
                       }}
                     >
-                        <TableCell>
+                        <TableCell className="text-center">
                         {row.party?.accountNumber}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="text-center">
                         {format(parseISO(row.loanDate), "dd/MM/yyyy")}
                       </TableCell>
                     
@@ -455,7 +459,7 @@ const LoanList = () => {
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="text-center">
                         {formatCurrency(row.totalLoanAmount)}{" "}
                         <span className="text-sm text-muted-foreground">
                           ({row.interest}%)
@@ -471,11 +475,10 @@ const LoanList = () => {
                         );
                         
                         // Fallback to old structure if new structure not available
-                        const fallbackLoanAmount = row.monthlyAmounts?.[month];
                         const fallbackReceivedAmount = row.monthlyReceivedAmounts?.[month];
                         
                         return (
-                          <TableCell key={month}>
+                          <TableCell key={month} className="text-center">
                             <div className="flex flex-col gap-1 text-xs">
                               {/* Always show interest amount */}
                               <div className="text-gray-600 font-medium">
@@ -485,20 +488,20 @@ const LoanList = () => {
                               {/* Show paid amount if available */}
                               <div className="text-blue-600">
                                 {hasData && monthData.receivedInterest > 0 
-                                  ? `Paid: ${formatCurrency(monthData.receivedInterest)}` 
+                                  ? `${formatCurrency(monthData.receivedInterest)}` 
                                   : fallbackReceivedAmount 
-                                    ? `Paid: ${formatCurrency(fallbackReceivedAmount)}` 
-                                    : "Paid: -"}
+                                    ? `${formatCurrency(fallbackReceivedAmount)}` 
+                                    : "-"}
                               </div>
                             </div>
                           </TableCell>
                         );
                       })}
-                      <TableCell className="text-right">
+                      <TableCell className="text-center">
                         {formatCurrency(row.totalBalanceInterest)}
                       </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2" onClick={(e) => e.stopPropagation()}>
+                      <TableCell className="text-center">
+                        <div className="flex justify-center gap-2" onClick={(e) => e.stopPropagation()}>
                           <Button
                             variant="ghost"
                             size="icon"
@@ -508,14 +511,16 @@ const LoanList = () => {
                             <List className="h-4 w-4" />
                             <span className="sr-only">Entries</span>
                           </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleEdit(row.id.toString())}
-                          >
-                            <PenSquare className="h-4 w-4" />
-                            <span className="sr-only">Edit</span>
-                          </Button>
+                          {!row.isClosed && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleEdit(row.id.toString())}
+                            >
+                              <PenSquare className="h-4 w-4" />
+                              <span className="sr-only">Edit</span>
+                            </Button>
+                          )}
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
                               <Button variant="ghost" size="icon">
@@ -596,6 +601,7 @@ const LoanList = () => {
       {/* Entry Creation Dialog */}
       <EntryDialog
         selectedLoanId={selectedLoanId}
+        selectedLoanIsClosed={selectedLoanIsClosed}
         isEntryDialogOpen={isEntryDialogOpen}
         setIsEntryDialogOpen={setIsEntryDialogOpen}
         setSelectedLoanId={setSelectedLoanId}

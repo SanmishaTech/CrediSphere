@@ -3,12 +3,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { LoaderCircle, Info } from "lucide-react";
+import { LoaderCircle, Info, XCircle } from "lucide-react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { post, get } from "@/services/apiService";
+import CloseAccountDialog from "@/modules/Loans/CloseAccountDialog";
 
 interface EntryDialogProps {
   selectedLoanId: number | null;
+  selectedLoanIsClosed?: boolean;
   isEntryDialogOpen: boolean;
   setIsEntryDialogOpen: (open: boolean) => void;
   setSelectedLoanId: (id: number | null) => void;
@@ -19,15 +21,20 @@ interface CreateEntryFormProps {
   onSubmit: (payload: any) => void;
   isSubmitting: boolean;
   onCancel?: () => void;
+  onCloseAccount?: () => void;
+  isClosed?: boolean;
 }
 
 const EntryDialog: React.FC<EntryDialogProps> = ({
   selectedLoanId,
+  selectedLoanIsClosed,
   isEntryDialogOpen,
   setIsEntryDialogOpen,
   setSelectedLoanId,
 }) => {
   const queryClient = useQueryClient();
+  const [isCloseAccountDialogOpen, setIsCloseAccountDialogOpen] = useState(false);
+  
   const createEntryMutation = useMutation({
     mutationFn: (payload: any) => post("/entries", payload),
     onSuccess: (data) => {
@@ -57,24 +64,50 @@ const EntryDialog: React.FC<EntryDialogProps> = ({
     },
   });
 
+  const handleOpenCloseAccount = () => {
+    setIsEntryDialogOpen(false);
+    setIsCloseAccountDialogOpen(true);
+  };
+
+  const handleCloseAccountSuccess = () => {
+    setIsCloseAccountDialogOpen(false);
+    setSelectedLoanId(null);
+    queryClient.invalidateQueries({ queryKey: ["loans"] });
+  };
+
   return (
     selectedLoanId && (
-      <Dialog open={isEntryDialogOpen} onOpenChange={setIsEntryDialogOpen}>
-        <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Create Entry for Loan #{selectedLoanId}</DialogTitle>
-          </DialogHeader>
-          <CreateEntryForm
-            loanIdPrefill={selectedLoanId}
-            onSubmit={(payload) => createEntryMutation.mutate(payload)}
-            isSubmitting={createEntryMutation.isPending}
-            onCancel={() => {
-              setIsEntryDialogOpen(false);
-              setSelectedLoanId(null);
-            }}
-          />
-        </DialogContent>
-      </Dialog>
+      <>
+        <Dialog open={isEntryDialogOpen} onOpenChange={setIsEntryDialogOpen}>
+          <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Create Entry for Loan #{selectedLoanId}</DialogTitle>
+            </DialogHeader>
+            <CreateEntryForm
+              loanIdPrefill={selectedLoanId}
+              onSubmit={(payload) => createEntryMutation.mutate(payload)}
+              isSubmitting={createEntryMutation.isPending}
+              onCancel={() => {
+                setIsEntryDialogOpen(false);
+                setSelectedLoanId(null);
+              }}
+              onCloseAccount={selectedLoanIsClosed ? undefined : handleOpenCloseAccount}
+              isClosed={selectedLoanIsClosed}
+            />
+          </DialogContent>
+        </Dialog>
+        
+        {!selectedLoanIsClosed && (
+        <CloseAccountDialog
+          loanId={selectedLoanId}
+          isOpen={isCloseAccountDialogOpen}
+          onClose={() => {
+            setIsCloseAccountDialogOpen(false);
+            setSelectedLoanId(null);
+          }}
+          onSuccess={handleCloseAccountSuccess}
+        />)}
+      </>
     )
   );
 };
@@ -84,6 +117,8 @@ const CreateEntryForm: React.FC<CreateEntryFormProps> = ({
   onSubmit,
   isSubmitting,
   onCancel,
+  onCloseAccount,
+  isClosed,
 }) => {
   const getTodayDate = () => {
     const today = new Date();
@@ -109,7 +144,6 @@ const CreateEntryForm: React.FC<CreateEntryFormProps> = ({
     receivedInterest: "",
   });
 
-  const [isLoadingLoanDetails, setIsLoadingLoanDetails] = useState(false);
 
   React.useEffect(() => {
     if (loanIdPrefill) {
@@ -120,7 +154,6 @@ const CreateEntryForm: React.FC<CreateEntryFormProps> = ({
   const fetchLoanDetails = async (loanId: string) => {
     if (!loanId || isNaN(Number(loanId))) return;
 
-    setIsLoadingLoanDetails(true);
     try {
       const response = await get(`/entries/loan/${loanId}/details`);
       setForm((prev) => ({
@@ -139,8 +172,6 @@ const CreateEntryForm: React.FC<CreateEntryFormProps> = ({
     } catch (error) {
       console.error('Failed to fetch loan details:', error);
       toast.error('Failed to fetch loan details');
-    } finally {
-      setIsLoadingLoanDetails(false);
     }
   };
 
@@ -321,91 +352,113 @@ const CreateEntryForm: React.FC<CreateEntryFormProps> = ({
         </>
       )}
 
-      {/* Payment Section */}
-      <div className="space-y-4">
-        <h3 className="text-sm font-semibold text-gray-800 border-b border-gray-200 pb-2">Payment Details</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="space-y-1">
-            <label className="block text-sm font-bold text-gray-700" htmlFor="receivedDate">
-              Received Date <span className="text-red-500">*</span>
-            </label>
-            <Input
-              id="receivedDate"
-              name="receivedDate"
-              type="date"
-              value={form.receivedDate}
-              onChange={handleChange}
-              required
-              className="focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-          <div className="space-y-1">
-            <label className="block text-sm font-bold text-gray-700" htmlFor="receivedInterest">
-              Received Interest <span className="text-red-500">*</span>
-            </label>
-            <div className="relative">
-              <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500 font-medium">₹</span>
+      {/* Payment Section (hidden when closed) */}
+      {!isClosed ? (
+        <div className="space-y-4">
+          <h3 className="text-sm font-semibold text-gray-800 border-b border-gray-200 pb-2">Payment Details</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="space-y-1">
+              <label className="block text-sm font-bold text-gray-700" htmlFor="receivedDate">
+                Received Date <span className="text-red-500">*</span>
+              </label>
               <Input
-                id="receivedInterest"
-                name="receivedInterest"
-                type="number"
-                step="0.01"
-                value={form.receivedInterest}
+                id="receivedDate"
+                name="receivedDate"
+                type="date"
+                value={form.receivedDate}
                 onChange={handleChange}
-                className={`pl-7 focus:ring-2 ${validationErrors.receivedInterest ? 'border-orange-500 focus:ring-orange-200' : 'focus:ring-blue-500'}`}
-                placeholder="0.00"
                 required
+                className="focus:ring-2 focus:ring-blue-500"
               />
             </div>
-            {validationErrors.receivedInterest && (
-              <p className="text-orange-600 text-xs mt-1 flex items-start gap-1">
-                <span className="text-orange-500 mt-0.5">ℹ</span>
-                {validationErrors.receivedInterest}
-              </p>
-            )}
-          </div>
-          <div className="space-y-1">
-            <label className="block text-sm font-bold text-gray-700" htmlFor="receivedAmount">
-              Received Amount
-            </label>
-            <div className="relative">
-              <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500 font-medium">₹</span>
-              <Input
-                id="receivedAmount"
-                name="receivedAmount"
-                type="number"
-                step="0.01"
-                value={form.receivedAmount}
-                onChange={handleChange}
-                className={`pl-7 focus:ring-2 ${validationErrors.receivedAmount ? 'border-red-500 focus:ring-red-200' : 'focus:ring-blue-500'}`}
-                placeholder="0.00"
-              />
+            <div className="space-y-1">
+              <label className="block text-sm font-bold text-gray-700" htmlFor="receivedInterest">
+                Received Interest <span className="text-red-500">*</span>
+              </label>
+              <div className="relative">
+                <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500 font-medium">₹</span>
+                <Input
+                  id="receivedInterest"
+                  name="receivedInterest"
+                  type="number"
+                  step="0.01"
+                  value={form.receivedInterest}
+                  onChange={handleChange}
+                  className={`pl-7 focus:ring-2 ${validationErrors.receivedInterest ? 'border-orange-500 focus:ring-orange-200' : 'focus:ring-blue-500'}`}
+                  placeholder="0.00"
+                  required
+                />
+              </div>
+              {validationErrors.receivedInterest && (
+                <p className="text-orange-600 text-xs mt-1 flex items-start gap-1">
+                  <span className="text-orange-500 mt-0.5">ℹ</span>
+                  {validationErrors.receivedInterest}
+                </p>
+              )}
             </div>
-            {validationErrors.receivedAmount && (
-              <p className="text-red-500 text-xs mt-1 flex items-start gap-1">
-                <span className="text-red-500 mt-0.5">⚠</span>
-                {validationErrors.receivedAmount}
-              </p>
-            )}
+            <div className="space-y-1">
+              <label className="block text-sm font-bold text-gray-700" htmlFor="receivedAmount">
+                Received Amount
+              </label>
+              <div className="relative">
+                <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500 font-medium">₹</span>
+                <Input
+                  id="receivedAmount"
+                  name="receivedAmount"
+                  type="number"
+                  step="0.01"
+                  value={form.receivedAmount}
+                  onChange={handleChange}
+                  className={`pl-7 focus:ring-2 ${validationErrors.receivedAmount ? 'border-red-500 focus:ring-red-200' : 'focus:ring-blue-500'}`}
+                  placeholder="0.00"
+                />
+              </div>
+              {validationErrors.receivedAmount && (
+                <p className="text-red-500 text-xs mt-1 flex items-start gap-1">
+                  <span className="text-red-500 mt-0.5">⚠</span>
+                  {validationErrors.receivedAmount}
+                </p>
+              )}
+            </div>
           </div>
-         
         </div>
-      </div>
+      ) : (
+        <div className="p-3 rounded border bg-red-50 text-red-700 text-sm">
+          This loan account is closed. New payment entries are disabled.
+        </div>
+      )}
 
-      <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
-        {onCancel && (
-          <Button type="button" variant="outline" onClick={onCancel} className="px-6">
-            Cancel
-          </Button>
-        )}
-        <Button 
-          type="submit" 
-          disabled={isSubmitting || Object.keys(validationErrors).some(key => validationErrors[key] && validationErrors[key].includes('cannot exceed'))}
-          className="px-6 bg-blue-600 hover:bg-blue-700 focus:ring-2 focus:ring-blue-500"
-        >
-          {isSubmitting && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
-          Create Entry
-        </Button>
+      <div className="flex justify-between items-center pt-4 border-t border-gray-200">
+        <div>
+          {onCloseAccount && !isClosed && (
+            <Button 
+              type="button" 
+              variant="destructive"
+              onClick={onCloseAccount}
+              className="px-6"
+            >
+              <XCircle className="mr-2 h-4 w-4" />
+              Close Account
+            </Button>
+          )}
+        </div>
+        <div className="flex gap-3">
+          {onCancel && (
+            <Button type="button" variant="outline" onClick={onCancel} className="px-6">
+              Cancel
+            </Button>
+          )}
+          {!isClosed && (
+            <Button 
+              type="submit" 
+              disabled={isSubmitting || Object.keys(validationErrors).some(key => validationErrors[key] && validationErrors[key].includes('cannot exceed'))}
+              className="px-6 bg-blue-600 hover:bg-blue-700 focus:ring-2 focus:ring-blue-500"
+            >
+              {isSubmitting && <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />}
+              Create Entry
+            </Button>
+          )}
+        </div>
       </div>
     </form>
   );
