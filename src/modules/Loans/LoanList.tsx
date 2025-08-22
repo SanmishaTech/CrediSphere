@@ -99,6 +99,7 @@ interface TableRowData {
   totalReceivedAmount?: number;
   totalReceivedInterest?: number;
   interest: number;
+  balanceAmount?: number;
   isClosed?: boolean;
 }
 
@@ -276,6 +277,7 @@ const LoanList = () => {
         totalReceivedAmount: summary?.totalReceivedAmount ?? 0,
         totalReceivedInterest: summary?.totalReceivedInterest ?? 0,
         totalBalanceInterest: loan.balanceInterest,
+        balanceAmount: loan.balanceAmount,
         interest: loan.interest,
         isClosed: loan.isClosed,
       } as TableRowData;
@@ -415,20 +417,21 @@ const LoanList = () => {
                   {months.map((month: string) => (
                     <TableHead key={month} className="text-center">{month}</TableHead>
                   ))}
-                  <TableHead className="text-center">Remaining Interest</TableHead>
-                  <TableHead className="text-center">Actions</TableHead>
+                  <TableHead className="text-center border-r border-gray-300 p-2 md:p-3 text-xs md:text-sm">Remaining Interest</TableHead>
+                  <TableHead className="text-center border-r border-gray-300 p-2 md:p-3 text-xs md:text-sm">Balance Pending</TableHead>
+                  <TableHead className="text-center p-2 md:p-3 text-xs md:text-sm">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {(isLoading || isLoadingMonthlySummary) ? (
-                  <TableRow className="divide-x divide-border">
-                    <TableCell colSpan={months.length + 5} className="text-center">
+                  <TableRow className="border-b border-gray-300">
+                    <TableCell colSpan={months.length + 7} className="text-center">
                       <LoaderCircle className="h-8 w-8 animate-spin inline-block" />
                     </TableCell>
                   </TableRow>
                 ) : tableData.length === 0 ? (
-                  <TableRow className="divide-x divide-border">
-                    <TableCell colSpan={months.length + 5} className="text-center">
+                  <TableRow className="border-b border-gray-300">
+                    <TableCell colSpan={months.length + 7} className="text-center">
                       No loans found.
                     </TableCell>
                   </TableRow>
@@ -460,7 +463,7 @@ const LoanList = () => {
                         </div>
                       </TableCell>
                       <TableCell className="text-center">
-                        {formatCurrency(row.totalLoanAmount)}{" "}
+                        <span className="font-semibold text-base md:text-lg tabular-nums">{formatCurrency(row.totalLoanAmount)}</span>{" "}
                         <span className="text-sm text-muted-foreground">
                           ({row.interest}%)
                         </span>
@@ -479,29 +482,32 @@ const LoanList = () => {
                         
                         return (
                           <TableCell key={month} className="text-center">
-                            <div className="flex flex-col gap-1 text-xs">
+                            <div className="flex flex-col gap-1 text-sm md:text-base">
                               {/* Always show interest amount */}
-                              <div className="text-gray-600 font-medium">
+                              <div className="text-gray-700 font-semibold text-base md:text-lg tabular-nums">
                                  {formatCurrency((row.totalLoanAmount * row.interest) / 100)}
                               </div>
                               
                               {/* Show paid amount if available */}
-                              <div className="text-blue-600">
-                                {hasData && monthData.receivedInterest > 0 
-                                  ? `${formatCurrency(monthData.receivedInterest)}` 
-                                  : fallbackReceivedAmount 
-                                    ? `${formatCurrency(fallbackReceivedAmount)}` 
-                                    : "-"}
+                              <div className="text-blue-600 font-semibold text-sm md:text-base tabular-nums">
+                                 {hasData && monthData.receivedInterest > 0 
+                                   ? `${formatCurrency(monthData.receivedInterest)}` 
+                                   : fallbackReceivedAmount 
+                                     ? `${formatCurrency(fallbackReceivedAmount)}` 
+                                     : "-"}
                               </div>
                             </div>
                           </TableCell>
                         );
                       })}
-                      <TableCell className="text-center">
+                      <TableCell className="text-center border-r border-gray-300 p-2 md:p-3 text-sm md:text-lg font-semibold tabular-nums">
                         {formatCurrency(row.totalBalanceInterest)}
                       </TableCell>
-                      <TableCell className="text-center">
-                        <div className="flex justify-center gap-2" onClick={(e) => e.stopPropagation()}>
+                      <TableCell className="text-center border-r border-gray-300 p-2 md:p-3 text-sm md:text-lg font-semibold tabular-nums">
+                        {formatCurrency(row.balanceAmount ?? 0)}
+                      </TableCell>
+                      <TableCell className="text-center p-2 md:p-3">
+                        <div className="flex justify-center gap-1 md:gap-2" onClick={(e) => e.stopPropagation()}>
                           <Button
                             variant="ghost"
                             size="icon"
